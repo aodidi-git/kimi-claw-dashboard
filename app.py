@@ -14,7 +14,7 @@ st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
 # Sidebar
 st.sidebar.header("Navigation")
-page = st.sidebar.radio("Go to", ["Overview", "Tech Sector Swarm", "Ledger", "Settings"])
+page = st.sidebar.radio("Go to", ["Overview", "Analytics", "Tech Sector Swarm", "Ledger", "Settings"])
 
 # Overview Page
 if page == "Overview":
@@ -30,6 +30,19 @@ if page == "Overview":
     
     st.subheader("Recent Activity")
     st.info("Tech Sector Swarm test run completed - 14 signals found across 3 pillars")
+
+# Analytics Page
+elif page == "Analytics":
+    st.header("📊 Analytics")
+    st.subheader("Signals per Pillar")
+
+    # Sample data for the bar chart
+    chart_data = pd.DataFrame({
+        "Pillar": ["Pillar 1", "Pillar 2", "Pillar 3"],
+        "Signals": [5, 7, 2]  # Example data, summing to 14
+    })
+
+    st.bar_chart(chart_data.set_index("Pillar"))
 
 # Tech Sector Swarm Page
 elif page == "Tech Sector Swarm":
