@@ -1,0 +1,111 @@
+<div data-run-status="{{ run.status }}">
+{% if run.status in ('pending', 'running') %}
+  <div class="banner running">
+    ⏳ Run is {{ run.status }}… fetching profiles. This page auto-refreshes.
+  </div>
+{% elif run.status == 'failed' %}
+  <div class="banner failed">❌ Run failed.
+    {% if summary and summary.error %}<span class="muted">{{ summary.error }}</span>{% endif %}
+  </div>
+{% else %}
+  <div class="banner done">✅ Run complete.</div>
+{% endif %}
+
+{% if run.status in ('done', 'failed') %}
+  <p>
+    <form class="inline" action="/runs/{{ run.id }}/rerun" method="post">
+      <button class="small secondary" type="submit">↻ Re-run this event</button>
+    </form>
+    {% if run.status == 'done' %}
+      <a class="btn small secondary" href="/runs/{{ run.id }}/export.csv">⬇ CSV</a>
+      <a class="btn small secondary" href="/runs/{{ run.id }}/export.json">⬇ JSON</a>
+    {% endif %}
+  </p>
+{% endif %}
+
+<h2>Profile fetches</h2>
+<table>
+  <thead><tr><th>Profile</th><th>Trial</th><th>Status</th><th>Method</th><th>Note</th></tr></thead>
+  <tbody>
+  {% for s in snapshots %}
+    <tr>
+      <td>{{ s.profile_name }}</td>
+      <td>{{ s.trial }}</td>
+      <td>
+        {% if s.status == 'ok' %}<span class="tag ok">ok</span>
+        {% elif s.status == 'blocked' %}<span class="tag blocked">blocked</span>
+        {% elif s.status == 'pending' %}<span class="tag">pending</span>
+        {% else %}<span class="tag blocked">{{ s.status }}</span>{% endif %}
+      </td>
+      <td class="muted">{{ s.extraction_method or '—' }}</td>
+      <td class="muted">{{ s.error or '' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if summary and summary.rows is defined %}
+  <h2>Price comparison</h2>
+  {% for n in summary.notes %}<p class="note">• {{ n }}</p>{% endfor %}
+  {% if summary.cheapest_profile_name %}
+    <p>Cheapest profile most often: <strong>{{ summary.cheapest_profile_name }}</strong>.
+       Max observed savings vs baseline: <strong>${{ '%.2f'|format(summary.max_savings_abs) }}</strong>
+       ({{ summary.max_savings_pct }}%).
+       Significant deltas: <strong>{{ summary.significant_count }}</strong>.</p>
+  {% endif %}
+
+  {% set profiles = summary.profiles %}
+  <table>
+    <thead>
+      <tr>
+        <th>Section / Row / Qty</th>
+        {% for p in profiles %}
+          <th>{{ p.name }}{% if p.is_baseline %} <span class="tag base">base</span>{% endif %}</th>
+        {% endfor %}
+        <th>Buy</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in summary.rows %}
+      <tr>
+        <td>{{ row.section or '?' }} / {{ row.row or '?' }} / {{ row.quantity or '?' }}</td>
+        {% for p in profiles %}
+          {% set cell = row.cells.get(p.id|string) or row.cells.get(p.id) %}
+          <td class="right {{ 'cheapest' if cell and row.cheapest_profile_id == cell.profile_id }}">
+            {% if cell and cell.all_in_price is not none %}
+              ${{ '%.2f'|format(cell.all_in_price) }}
+              {% if cell.delta_abs is not none and cell.delta_abs != 0 %}
+                <div class="{{ 'delta-noise' if not cell.significant else ('delta-down' if cell.delta_abs < 0 else 'delta-up') }}">
+                  {{ '%+.2f'|format(cell.delta_abs) }}
+                  {% if cell.delta_pct is not none %}({{ '%+.1f'|format(cell.delta_pct) }}%){% endif %}
+                </div>
+              {% endif %}
+            {% else %}<span class="muted">—</span>{% endif %}
+          </td>
+        {% endfor %}
+        <td>
+          {% if row.cheapest_profile_id is not none %}
+            {% set best = row.cells.get(row.cheapest_profile_id|string) or row.cells.get(row.cheapest_profile_id) %}
+            {% if best and best.listing_url %}
+            <form class="inline" onsubmit="return handoff(this)">
+              <input type="hidden" name="profile_id" value="{{ row.cheapest_profile_id }}">
+              <input type="hidden" name="listing_url" value="{{ best.listing_url }}">
+              <span class="toast-slot"></span>
+              <button class="small" type="submit">Buy here</button>
+            </form>
+            {% endif %}
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="99" class="muted">No listings matched across ≥2 profiles.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if summary.unmatched %}
+    <h2>Listings shown to only one profile ({{ summary.unmatched|length }})</h2>
+    <p class="note">These appeared for a single profile — itself a possible discrimination signal (or just inventory churn).</p>
+  {% endif %}
+{% endif %}
+</div>

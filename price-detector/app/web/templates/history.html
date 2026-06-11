@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Run history</h1>
+
+{% if trends %}
+<h2>Discrimination trend (max savings % per run)</h2>
+<p class="note">A consistently high line across runs is a stronger signal than a single spike.</p>
+<table>
+  <thead><tr><th>Event</th><th>Trend</th><th>Runs</th><th>Latest</th></tr></thead>
+  <tbody>
+  {% for t in trends %}
+    <tr>
+      <td class="muted">{{ t.label }}</td>
+      <td>{{ t.svg|safe }}</td>
+      <td>{{ t.runs }}</td>
+      <td>{{ '%.1f'|format(t.latest) }}%</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+<table>
+  <thead><tr>
+    <th>#</th><th>Event</th><th>Trials</th><th>Status</th>
+    <th>Cheapest profile</th><th>Max savings</th><th>Sig. deltas</th><th></th>
+  </tr></thead>
+  <tbody>
+  {% for r in runs %}
+    <tr>
+      <td><a href="/runs/{{ r.id }}">{{ r.id }}</a></td>
+      <td class="muted">{{ (r.event_name or r.event_url)[:55] }}</td>
+      <td>{{ r.trials }}</td>
+      <td>{{ r.status }}</td>
+      {% if r.summary and r.summary.rows is defined %}
+        <td>{{ r.summary.cheapest_profile_name or '—' }}</td>
+        <td>${{ '%.2f'|format(r.summary.max_savings_abs) }} ({{ r.summary.max_savings_pct }}%)</td>
+        <td>{{ r.summary.significant_count }}</td>
+      {% else %}
+        <td class="muted">—</td><td class="muted">—</td><td class="muted">—</td>
+      {% endif %}
+      <td>
+        <form class="inline" action="/runs/{{ r.id }}/rerun" method="post">
+          <button class="small secondary" type="submit">↻ Re-run</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8" class="muted">No runs yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

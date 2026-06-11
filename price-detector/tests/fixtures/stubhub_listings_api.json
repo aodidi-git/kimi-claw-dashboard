@@ -1,0 +1,9 @@
+{
+  "grid": {
+    "items": [
+      {"listingId": "900001", "sectionName": "Floor 1", "row": "5", "quantity": 2, "listPrice": 250.0, "fees": 62.5, "totalPrice": 312.5, "currency": "USD"},
+      {"listingId": "900002", "sectionName": "Lower 110", "row": "12", "quantity": 4, "listPrice": 140.0, "fees": 35.0, "currency": "USD"},
+      {"listingId": "900003", "sectionName": "Upper 320", "row": "G", "quantity": 2, "price": {"amount": 65.0, "currency": "USD"}}
+    ]
+  }
+}

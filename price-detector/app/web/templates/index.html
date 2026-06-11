@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Detect ticket price discrimination</h1>
+<p class="muted">
+  Fetch the same event under several shopper profiles at the same moment, then
+  compare per-listing prices. Supports <strong>StubHub</strong>, <strong>SeatGeek</strong>,
+  and <strong>Vivid Seats</strong>.
+</p>
+
+<div class="panel">
+  <form action="/runs" method="post">
+    <label for="event_url">StubHub, SeatGeek, or Vivid Seats event URL</label>
+    <input type="url" id="event_url" name="event_url" required
+           placeholder="https://www.stubhub.com/.../event/123456789/">
+    <label for="trials">Trials (repeat fetches to estimate price-volatility noise floor)</label>
+    <input type="number" id="trials" name="trials" value="2" min="1" max="10">
+    <p class="note">
+      Enabled profiles run together each trial. Configure them on the
+      <a href="/profiles">Profiles</a> page.
+    </p>
+    <button type="submit">Run comparison</button>
+  </form>
+</div>
+
+<h2>Enabled profiles</h2>
+<table>
+  <thead><tr><th>Name</th><th>Device</th><th>Persistence</th><th>Auth</th><th>Proxy</th><th></th></tr></thead>
+  <tbody>
+  {% for p in profiles %}
+    <tr style="{{ '' if p.enabled else 'opacity:.4' }}">
+      <td>{{ p.name }} {% if p.is_baseline %}<span class="tag base">baseline</span>{% endif %}</td>
+      <td>{{ p.device }}</td><td>{{ p.persistence }}</td><td>{{ p.auth }}</td>
+      <td>{{ p.proxy_geo_hint or ('proxy #' ~ p.proxy_id if p.proxy_id else '—') }}</td>
+      <td>{% if not p.enabled %}<span class="muted">disabled</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Recent runs</h2>
+<table>
+  <thead><tr><th>#</th><th>Event</th><th>Status</th><th>Cheapest</th></tr></thead>
+  <tbody>
+  {% for r in recent %}
+    <tr>
+      <td><a href="/runs/{{ r.id }}">{{ r.id }}</a></td>
+      <td class="muted">{{ (r.event_name or r.event_url)[:60] }}</td>
+      <td>{{ r.status }}</td>
+      <td class="muted">—</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">No runs yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
