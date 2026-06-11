@@ -2,11 +2,18 @@
 from __future__ import annotations
 
 import asyncio
+import csv
+import io
 import json
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -18,6 +25,38 @@ from .sparkline import sparkline_svg
 
 _HERE = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(_HERE / "templates"))
+
+
+def _cell(row: dict, pid: int) -> dict | None:
+    """Cell lookup tolerant of int vs str profile-id keys (JSON round-trips them)."""
+    cells = row.get("cells", {})
+    return cells.get(pid) or cells.get(str(pid))
+
+
+def _run_to_csv(summary: dict) -> str:
+    """Flatten a run summary's comparison matrix into CSV text."""
+    profiles = summary.get("profiles", [])
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    header = ["section", "row", "quantity"]
+    for p in profiles:
+        header += [f"{p['name']} all_in", f"{p['name']} delta_pct"]
+    header += ["cheapest_profile", "cheapest_price"]
+    w.writerow(header)
+
+    prof_by_id = {p["id"]: p for p in profiles}
+    for row in summary.get("rows", []):
+        out = [row.get("section"), row.get("row"), row.get("quantity")]
+        for p in profiles:
+            c = _cell(row, p["id"])
+            out.append("" if not c or c.get("all_in_price") is None else f"{c['all_in_price']:.2f}")
+            out.append("" if not c or c.get("delta_pct") is None else f"{c['delta_pct']:.1f}")
+        cheapest = prof_by_id.get(row.get("cheapest_profile_id"))
+        out.append(cheapest["name"] if cheapest else "")
+        cp = row.get("cheapest_price")
+        out.append("" if cp is None else f"{cp:.2f}")
+        w.writerow(out)
+    return buf.getvalue()
 
 
 def _build_trends(parsed_runs: list[dict]) -> list[dict]:
@@ -120,14 +159,47 @@ def register(app: FastAPI, state) -> None:
         site = site_for_url(event_url)
         if site is None:
             return JSONResponse(
-                {"error": "No adapter handles this URL. Supported: StubHub, SeatGeek."},
+                {"error": "No adapter handles this URL. Supported: StubHub, SeatGeek, Vivid Seats."},
                 status_code=400,
             )
         event_id = db.upsert_event(site, event_url)
-        run_id = db.create_run(event_id, max(1, int(trials)))
-        task = state.runner.run(run_id)
-        state.tasks[run_id] = asyncio.create_task(task)
+        run_id = _start_run(event_id, max(1, int(trials)))
         return RedirectResponse(f"/runs/{run_id}", status_code=303)
+
+    def _start_run(event_id: int, trials: int) -> int:
+        run_id = db.create_run(event_id, trials)
+        state.tasks[run_id] = asyncio.create_task(state.runner.run(run_id))
+        return run_id
+
+    @app.post("/runs/{run_id}/rerun")
+    async def rerun(run_id: int):
+        old = db.query_one("SELECT * FROM runs WHERE id=?", (run_id,))
+        if old is None:
+            return HTMLResponse("Run not found", status_code=404)
+        new_id = _start_run(old["event_id"], old["trials"])
+        return RedirectResponse(f"/runs/{new_id}", status_code=303)
+
+    @app.get("/runs/{run_id}/export.json")
+    async def export_json(run_id: int):
+        run = db.query_one("SELECT * FROM runs WHERE id=?", (run_id,))
+        if run is None or not run["summary_json"]:
+            return JSONResponse({"error": "no completed summary for this run"}, status_code=404)
+        return JSONResponse(
+            json.loads(run["summary_json"]),
+            headers={"Content-Disposition": f'attachment; filename="run_{run_id}.json"'},
+        )
+
+    @app.get("/runs/{run_id}/export.csv")
+    async def export_csv(run_id: int):
+        run = db.query_one("SELECT * FROM runs WHERE id=?", (run_id,))
+        if run is None or not run["summary_json"]:
+            return PlainTextResponse("no completed summary for this run", status_code=404)
+        csv_text = _run_to_csv(json.loads(run["summary_json"]))
+        return PlainTextResponse(
+            csv_text,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="run_{run_id}.csv"'},
+        )
 
     @app.get("/runs/{run_id}", response_class=HTMLResponse)
     async def run_detail(request: Request, run_id: int):

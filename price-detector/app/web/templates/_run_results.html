@@ -11,6 +11,18 @@
   <div class="banner done">✅ Run complete.</div>
 {% endif %}
 
+{% if run.status in ('done', 'failed') %}
+  <p>
+    <form class="inline" action="/runs/{{ run.id }}/rerun" method="post">
+      <button class="small secondary" type="submit">↻ Re-run this event</button>
+    </form>
+    {% if run.status == 'done' %}
+      <a class="btn small secondary" href="/runs/{{ run.id }}/export.csv">⬇ CSV</a>
+      <a class="btn small secondary" href="/runs/{{ run.id }}/export.json">⬇ JSON</a>
+    {% endif %}
+  </p>
+{% endif %}
+
 <h2>Profile fetches</h2>
 <table>
   <thead><tr><th>Profile</th><th>Trial</th><th>Status</th><th>Method</th><th>Note</th></tr></thead>

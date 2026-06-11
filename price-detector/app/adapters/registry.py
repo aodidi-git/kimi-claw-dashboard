@@ -4,8 +4,9 @@ from __future__ import annotations
 from .base import SiteAdapter
 from .seatgeek import SeatGeekAdapter
 from .stubhub import StubHubAdapter
+from .vividseats import VividSeatsAdapter
 
-ADAPTERS: list[type[SiteAdapter]] = [StubHubAdapter, SeatGeekAdapter]
+ADAPTERS: list[type[SiteAdapter]] = [StubHubAdapter, SeatGeekAdapter, VividSeatsAdapter]
 
 
 def get_adapter_for_url(url: str) -> SiteAdapter | None:

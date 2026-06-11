@@ -22,7 +22,7 @@
 <table>
   <thead><tr>
     <th>#</th><th>Event</th><th>Trials</th><th>Status</th>
-    <th>Cheapest profile</th><th>Max savings</th><th>Sig. deltas</th>
+    <th>Cheapest profile</th><th>Max savings</th><th>Sig. deltas</th><th></th>
   </tr></thead>
   <tbody>
   {% for r in runs %}
@@ -38,9 +38,14 @@
       {% else %}
         <td class="muted">—</td><td class="muted">—</td><td class="muted">—</td>
       {% endif %}
+      <td>
+        <form class="inline" action="/runs/{{ r.id }}/rerun" method="post">
+          <button class="small secondary" type="submit">↻ Re-run</button>
+        </form>
+      </td>
     </tr>
   {% else %}
-    <tr><td colspan="7" class="muted">No runs yet.</td></tr>
+    <tr><td colspan="8" class="muted">No runs yet.</td></tr>
   {% endfor %}
   </tbody>
 </table>

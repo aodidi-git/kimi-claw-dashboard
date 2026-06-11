@@ -3,12 +3,13 @@
 <h1>Detect ticket price discrimination</h1>
 <p class="muted">
   Fetch the same event under several shopper profiles at the same moment, then
-  compare per-listing prices. Supports <strong>StubHub</strong> and <strong>SeatGeek</strong>.
+  compare per-listing prices. Supports <strong>StubHub</strong>, <strong>SeatGeek</strong>,
+  and <strong>Vivid Seats</strong>.
 </p>
 
 <div class="panel">
   <form action="/runs" method="post">
-    <label for="event_url">StubHub or SeatGeek event URL</label>
+    <label for="event_url">StubHub, SeatGeek, or Vivid Seats event URL</label>
     <input type="url" id="event_url" name="event_url" required
            placeholder="https://www.stubhub.com/.../event/123456789/">
     <label for="trials">Trials (repeat fetches to estimate price-volatility noise floor)</label>

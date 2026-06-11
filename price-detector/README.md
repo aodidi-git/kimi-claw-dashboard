@@ -1,7 +1,7 @@
 # Ticket Price-Discrimination Detector
 
-A local research tool that tests whether a ticketing site (StubHub and SeatGeek)
-shows **different prices to different shoppers** — mobile vs desktop, logged-in vs
+A local research tool that tests whether a ticketing site (StubHub, SeatGeek,
+Vivid Seats) shows **different prices to different shoppers** — mobile vs desktop, logged-in vs
 anonymous, returning vs first-time, and by geography/IP — quantifies the
 discrepancy per listing, and helps you buy at the lowest observed price via an
 **assisted handoff** (it opens a real browser configured as the cheapest profile;
@@ -28,7 +28,7 @@ matches identical listings across profiles and reports per-listing price deltas.
   internal listings JSON API (stable listing IDs + fee fields), falling back to
   embedded page JSON, then DOM scraping. This flow is shared (`InterceptAdapter`);
   each site only declares its URL tokens, all-in pricing cookie, and checkout
-  link format. StubHub and SeatGeek are both supported.
+  link format. StubHub, SeatGeek, and Vivid Seats are supported.
 
 ## Setup
 
@@ -50,6 +50,9 @@ playwright install chromium
    and run. The run page auto-refreshes with a comparison matrix.
 3. **Buy here** — click on the cheapest cell to open a real browser configured as
    that profile at the listing; complete payment manually.
+4. **Re-run / export** — re-run an event with one click (from the run page or
+   History) to build a trend over time; export any completed run's comparison
+   matrix as **CSV** or **JSON**.
 
 ## Tests
 
@@ -92,8 +95,8 @@ development; sanitized copies become fixtures in `tests/fixtures/`.
 
 ```
 app/
-  adapters/   InterceptAdapter base + extract helpers + StubHub & SeatGeek
-              (registry maps URL -> adapter)
+  adapters/   InterceptAdapter base + extract helpers + StubHub, SeatGeek,
+              Vivid Seats (registry maps URL -> adapter)
   profiles/   profile CRUD, device presets, login capture
   engine/     browser mgr, runner (concurrent fetches), matching, stats, block detection
   purchase/   assisted-handoff launcher
