@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from .base import SiteAdapter
+from .seatgeek import SeatGeekAdapter
 from .stubhub import StubHubAdapter
 
-ADAPTERS: list[type[SiteAdapter]] = [StubHubAdapter]
+ADAPTERS: list[type[SiteAdapter]] = [StubHubAdapter, SeatGeekAdapter]
 
 
 def get_adapter_for_url(url: str) -> SiteAdapter | None:

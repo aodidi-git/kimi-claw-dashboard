@@ -14,9 +14,39 @@ from .. import db
 from ..adapters.registry import get_adapter_for_url, site_for_url
 from ..profiles import login_capture
 from ..profiles import manager
+from .sparkline import sparkline_svg
 
 _HERE = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(_HERE / "templates"))
+
+
+def _build_trends(parsed_runs: list[dict]) -> list[dict]:
+    """Per-event 'max savings %' trend across its completed runs.
+
+    Shows whether an observed price gap is consistent over time (a stronger
+    discrimination signal) or a one-off. Only events with >=2 completed runs
+    are included.
+    """
+    by_event: dict[int, list[dict]] = {}
+    for r in parsed_runs:
+        if r.get("status") == "done" and r.get("summary") and "rows" in r["summary"]:
+            by_event.setdefault(r["event_id"], []).append(r)
+
+    trends = []
+    for runs in by_event.values():
+        runs = sorted(runs, key=lambda r: r["id"])  # chronological
+        if len(runs) < 2:
+            continue
+        values = [float(r["summary"].get("max_savings_pct") or 0.0) for r in runs]
+        label = runs[-1].get("event_name") or runs[-1].get("event_url") or "event"
+        trends.append({
+            "label": label[:55],
+            "values": values,
+            "latest": values[-1],
+            "runs": len(runs),
+            "svg": sparkline_svg(values),
+        })
+    return trends
 
 
 def register(app: FastAPI, state) -> None:
@@ -90,7 +120,7 @@ def register(app: FastAPI, state) -> None:
         site = site_for_url(event_url)
         if site is None:
             return JSONResponse(
-                {"error": f"No adapter handles this URL. Supported: StubHub."},
+                {"error": "No adapter handles this URL. Supported: StubHub, SeatGeek."},
                 status_code=400,
             )
         event_id = db.upsert_event(site, event_url)
@@ -151,7 +181,7 @@ def register(app: FastAPI, state) -> None:
                     d["summary"] = None
             parsed.append(d)
         return templates.TemplateResponse(
-            request, "history.html", {"runs": parsed}
+            request, "history.html", {"runs": parsed, "trends": _build_trends(parsed)}
         )
 
     @app.post("/handoff")

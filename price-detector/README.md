@@ -1,7 +1,7 @@
 # Ticket Price-Discrimination Detector
 
-A local research tool that tests whether a ticketing site (StubHub first) shows
-**different prices to different shoppers** — mobile vs desktop, logged-in vs
+A local research tool that tests whether a ticketing site (StubHub and SeatGeek)
+shows **different prices to different shoppers** — mobile vs desktop, logged-in vs
 anonymous, returning vs first-time, and by geography/IP — quantifies the
 discrepancy per listing, and helps you buy at the lowest observed price via an
 **assisted handoff** (it opens a real browser configured as the cheapest profile;
@@ -24,9 +24,11 @@ matches identical listings across profiles and reports per-listing price deltas.
   A profile's delta vs the baseline counts as *significant* only when it exceeds
   `k × noise_floor` — this separates real discrimination from ordinary price
   volatility.
-- **Extraction**: StubHub listings are read primarily by intercepting the site's
+- **Extraction**: listings are read primarily by intercepting the site's
   internal listings JSON API (stable listing IDs + fee fields), falling back to
-  embedded page JSON, then DOM scraping.
+  embedded page JSON, then DOM scraping. This flow is shared (`InterceptAdapter`);
+  each site only declares its URL tokens, all-in pricing cookie, and checkout
+  link format. StubHub and SeatGeek are both supported.
 
 ## Setup
 
@@ -90,12 +92,14 @@ development; sanitized copies become fixtures in `tests/fixtures/`.
 
 ```
 app/
-  adapters/   site adapter interface + StubHub (registry maps URL -> adapter)
+  adapters/   InterceptAdapter base + extract helpers + StubHub & SeatGeek
+              (registry maps URL -> adapter)
   profiles/   profile CRUD, device presets, login capture
   engine/     browser mgr, runner (concurrent fetches), matching, stats, block detection
   purchase/   assisted-handoff launcher
-  web/        FastAPI routes, Jinja2 templates, vendored static assets
+  web/        FastAPI routes, Jinja2 templates, sparkline, vendored static assets
 ```
 
-Adding a site = implement `SiteAdapter` (`app/adapters/base.py`) and register it
-in `app/adapters/registry.py`.
+Adding a site = subclass `InterceptAdapter` (`app/adapters/base.py`) — usually
+just URL tokens, an all-in cookie, and `checkout_url` — and register it in
+`app/adapters/registry.py`. See `app/adapters/seatgeek.py` for a ~20-line example.

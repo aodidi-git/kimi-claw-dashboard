@@ -1,0 +1,7 @@
+{
+  "listings": [
+    {"id": "sg-1001", "section": "Lower 102", "row": "8", "quantity": 2, "price": 120.0, "fee": 30.0, "display_price": 150.0, "currency": "USD"},
+    {"id": "sg-1002", "s": "Upper 305", "r": "C", "q": 4, "p": 45.0, "f": 11.0, "dp": 56.0},
+    {"id": "sg-1003", "section": "Floor GA", "row": "GA", "quantity": 2, "display_price": 310.0}
+  ]
+}

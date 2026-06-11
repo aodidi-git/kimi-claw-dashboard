@@ -1,6 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Run history</h1>
+
+{% if trends %}
+<h2>Discrimination trend (max savings % per run)</h2>
+<p class="note">A consistently high line across runs is a stronger signal than a single spike.</p>
+<table>
+  <thead><tr><th>Event</th><th>Trend</th><th>Runs</th><th>Latest</th></tr></thead>
+  <tbody>
+  {% for t in trends %}
+    <tr>
+      <td class="muted">{{ t.label }}</td>
+      <td>{{ t.svg|safe }}</td>
+      <td>{{ t.runs }}</td>
+      <td>{{ '%.1f'|format(t.latest) }}%</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 <table>
   <thead><tr>
     <th>#</th><th>Event</th><th>Trials</th><th>Status</th>
