@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Run #{{ run.id }}</h1>
+<p class="muted">{{ event.url }}</p>
+<div id="toast-slot"></div>
+<div id="results" data-status="{{ run.status }}">
+  <div class="banner running">Loading…</div>
+</div>
+<script>pollResults({{ run.id }});</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Profiles & proxies</h1>
+<p class="muted">
+  Each profile is a distinct shopper identity. Enabled profiles run together in
+  every comparison. The <span class="tag base">baseline</span> is what deltas are
+  measured against.
+</p>
+
+<table>
+  <thead><tr>
+    <th>Name</th><th>Device</th><th>Persist</th><th>Auth</th><th>Proxy</th>
+    <th>Login</th><th>Enabled</th><th>Baseline</th>
+  </tr></thead>
+  <tbody>
+  {% for p in profiles %}
+    <tr>
+      <td>{{ p.name }}</td>
+      <td>{{ p.device }}</td>
+      <td>{{ p.persistence }}</td>
+      <td>{{ p.auth }}</td>
+      <td>
+        <form class="inline" action="/profiles/{{ p.id }}/proxy" method="post">
+          <select name="proxy_id" onchange="this.form.submit()">
+            <option value="" {{ 'selected' if not p.proxy_id }}>none</option>
+            {% for x in proxies %}
+              <option value="{{ x.id }}" {{ 'selected' if p.proxy_id==x.id }}>{{ x.label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </td>
+      <td>
+        {% if p.auth == 'logged_in' %}
+          <form class="inline" action="/profiles/{{ p.id }}/capture-login" method="post">
+            <button class="small secondary" type="submit">Capture</button>
+          </form>
+          <div class="note">{{ capture_status.get(p.id, 'idle') }}</div>
+        {% else %}<span class="muted">—</span>{% endif %}
+      </td>
+      <td>
+        <form class="inline" action="/profiles/{{ p.id }}/toggle" method="post">
+          <input type="hidden" name="enabled" value="{{ '0' if p.enabled else '1' }}">
+          <button class="small secondary" type="submit">{{ 'Disable' if p.enabled else 'Enable' }}</button>
+        </form>
+      </td>
+      <td>
+        {% if p.is_baseline %}<span class="tag base">baseline</span>
+        {% else %}
+          <form class="inline" action="/profiles/{{ p.id }}/baseline" method="post">
+            <button class="small secondary" type="submit">Set</button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Add proxy</h2>
+<div class="panel">
+  <form action="/proxies" method="post">
+    <div class="grid2">
+      <div>
+        <label>Label</label><input type="text" name="label" required placeholder="US-residential-NYC">
+        <label>Server</label><input type="text" name="server" required placeholder="http://host:port or socks5://host:port">
+      </div>
+      <div>
+        <label>Username (optional)</label><input type="text" name="username">
+        <label>Password (optional)</label><input type="text" name="password">
+        <label>Geo hint (optional)</label><input type="text" name="geo_hint" placeholder="UK / London">
+      </div>
+    </div>
+    <p class="note">Proxy credentials are stored locally in plaintext under <code>data/</code>.</p>
+    <button type="submit">Add proxy</button>
+  </form>
+</div>
+
+<h2>Existing proxies</h2>
+<table>
+  <thead><tr><th>#</th><th>Label</th><th>Server</th><th>Geo</th></tr></thead>
+  <tbody>
+  {% for x in proxies %}
+    <tr><td>{{ x.id }}</td><td>{{ x.label }}</td><td class="muted">{{ x.server }}</td><td>{{ x.geo_hint or '—' }}</td></tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">No proxies configured.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

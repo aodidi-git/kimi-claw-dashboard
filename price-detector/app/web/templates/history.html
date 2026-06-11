@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Run history</h1>
+<table>
+  <thead><tr>
+    <th>#</th><th>Event</th><th>Trials</th><th>Status</th>
+    <th>Cheapest profile</th><th>Max savings</th><th>Sig. deltas</th>
+  </tr></thead>
+  <tbody>
+  {% for r in runs %}
+    <tr>
+      <td><a href="/runs/{{ r.id }}">{{ r.id }}</a></td>
+      <td class="muted">{{ (r.event_name or r.event_url)[:55] }}</td>
+      <td>{{ r.trials }}</td>
+      <td>{{ r.status }}</td>
+      {% if r.summary and r.summary.rows is defined %}
+        <td>{{ r.summary.cheapest_profile_name or '—' }}</td>
+        <td>${{ '%.2f'|format(r.summary.max_savings_abs) }} ({{ r.summary.max_savings_pct }}%)</td>
+        <td>{{ r.summary.significant_count }}</td>
+      {% else %}
+        <td class="muted">—</td><td class="muted">—</td><td class="muted">—</td>
+      {% endif %}
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">No runs yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
